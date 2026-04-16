@@ -507,6 +507,13 @@ function createEl(tag, attrs = {}, children = []) {
   return el;
 }
 
+// Returns true if the field at this path should auto-uppercase as the user types.
+// All string fields are uppercased EXCEPT anything inside session_messages,
+// which is copied verbatim from external sources.
+function shouldUppercase(pathArr) {
+  return !pathArr.some(p => p === 'session_messages');
+}
+
 function getAtPath(obj, pathArr) { let cur = obj; for (const p of pathArr) { if (cur == null) return undefined; cur = cur[p]; } return cur; }
 function setAtPath(obj, pathArr, value) {
   let cur = obj;
@@ -568,10 +575,18 @@ function renderField(key, schema, pathArr, required) {
   const current = getAtPath(state.draft, pathArr);
   const isLong = type === 'string' && (key === 'reasoning' || key === 'key_message' || key === 'instruction' || key === 'summary');
   let input;
+  const upper = type === 'string' && shouldUppercase(pathArr);
   if (isLong) {
     input = createEl('textarea', {});
     input.value = current == null ? '' : current;
-    input.addEventListener('input', () => { setAtPath(state.draft, pathArr, input.value); markDirty(); });
+    input.addEventListener('input', () => {
+      if (upper) {
+        const start = input.selectionStart, end = input.selectionEnd;
+        const uppered = input.value.toUpperCase();
+        if (input.value !== uppered) { input.value = uppered; input.setSelectionRange(start, end); }
+      }
+      setAtPath(state.draft, pathArr, input.value); markDirty();
+    });
   } else if (type === 'integer' || type === 'number') {
     input = createEl('input', { type: 'number' });
     if (type === 'integer') input.step = '1';
@@ -585,7 +600,14 @@ function renderField(key, schema, pathArr, required) {
     input = createEl('input', { type: 'text' });
     input.value = current == null ? '' : current;
     if (schema.pattern) input.setAttribute('pattern', schema.pattern);
-    input.addEventListener('input', () => { setAtPath(state.draft, pathArr, input.value); markDirty(); });
+    input.addEventListener('input', () => {
+      if (upper) {
+        const start = input.selectionStart, end = input.selectionEnd;
+        const uppered = input.value.toUpperCase();
+        if (input.value !== uppered) { input.value = uppered; input.setSelectionRange(start, end); }
+      }
+      setAtPath(state.draft, pathArr, input.value); markDirty();
+    });
   }
   wrap.appendChild(input);
   return wrap;
@@ -624,10 +646,20 @@ function renderArray(key, schema, pathArr, required) {
     // keep a single input element alive across re-renders to avoid blur-add duplication
     const inp = createEl('input', { type: 'text', placeholder: 'add + Enter…' });
     let justAdded = false;
+    const upperTags = shouldUppercase(pathArr);
+
+    // Live-uppercase typing in the tag input, preserving caret position
+    inp.addEventListener('input', () => {
+      if (!upperTags) return;
+      const start = inp.selectionStart, end = inp.selectionEnd;
+      const uppered = inp.value.toUpperCase();
+      if (inp.value !== uppered) { inp.value = uppered; inp.setSelectionRange(start, end); }
+    });
 
     const commitValue = (raw) => {
-      const val = (raw || '').trim();
+      let val = (raw || '').trim();
       if (!val) return false;
+      if (upperTags) val = val.toUpperCase();
       const a = getAtPath(state.draft, pathArr);
       a.push(val);
       markDirty();
@@ -835,22 +867,28 @@ function suggestNextId() {
   return `CASE-${year}-${String(maxN + 1).padStart(3, '0')}`;
 }
 
-// Strip empty-for-validation items from arrays before saving.
-// This keeps the persisted JSON clean — no dangling empty objects.
-function cleanForSave(data, schema) {
+// Strip empty-for-validation items from arrays before saving,
+// and enforce UPPERCASE on all string fields except those under session_messages.
+// This keeps the persisted JSON clean and consistently formatted.
+function cleanForSave(data, schema, pathArr = []) {
   if (data === null || data === undefined) return data;
   const t = typeOf(schema);
   if (t === 'array' && Array.isArray(data) && schema.items) {
-    const cleaned = data.filter(item => !isEmptyItem(item, schema.items)).map(item => cleanForSave(item, schema.items));
+    const cleaned = data
+      .filter(item => !isEmptyItem(item, schema.items))
+      .map((item, i) => cleanForSave(item, schema.items, [...pathArr, i]));
     return cleaned;
   }
   if (t === 'object' && typeof data === 'object' && !Array.isArray(data)) {
     const out = {};
     for (const [k, v] of Object.entries(data)) {
       const subSchema = (schema.properties && schema.properties[k]) || { type: typeof v };
-      out[k] = cleanForSave(v, subSchema);
+      out[k] = cleanForSave(v, subSchema, [...pathArr, k]);
     }
     return out;
+  }
+  if (t === 'string' && typeof data === 'string' && shouldUppercase(pathArr)) {
+    return data.toUpperCase();
   }
   return data;
 }
