@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Triage Case · Knowledge Base</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f13; --bg-2: #15171d; --panel: #1a1d25; --panel-2: #22262f;
+    --border: #2a2e38; --border-strong: #3a3f4c;
+    --text: #e6e8ee; --text-dim: #8a92a6; --text-muted: #5e6576;
+    --accent: #a3e635; --accent-dim: #4a5a1f;
+    --warn: #fbbf24; --err: #f87171; --ok: #34d399; --blue: #60a5fa;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; height: 100%; }
+  body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+  header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--bg-2); flex-shrink: 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 700; letter-spacing: 0.5px; font-size: 13px; }
+  .brand .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); }
+  .brand .sub { color: var(--text-muted); font-weight: 400; margin-left: 6px; }
+  .brand .repo-info { margin-left: 20px; padding-left: 20px; border-left: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); }
+  .brand .repo-info strong { color: var(--accent); font-weight: 500; }
+  .top-actions { display: flex; gap: 6px; align-items: center; }
+
+  button, .btn { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 500; padding: 6px 12px; border-radius: 4px; cursor: pointer; background: var(--panel); color: var(--text); border: 1px solid var(--border-strong); transition: all 0.12s ease; white-space: nowrap; }
+  button:hover, .btn:hover { background: var(--panel-2); border-color: var(--text-muted); }
+  button.primary { background: var(--accent); color: #0a0c07; border-color: var(--accent); font-weight: 700; }
+  button.primary:hover { background: #b8ef4f; }
+  button.danger { color: var(--err); border-color: #4a2525; }
+  button.danger:hover { background: #2a1515; }
+  button.ghost { background: transparent; border-color: transparent; color: var(--text-dim); }
+  button.ghost:hover { color: var(--text); background: var(--panel); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  main { display: grid; grid-template-columns: 320px 1fr; flex: 1; overflow: hidden; }
+
+  aside { background: var(--bg-2); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  .sidebar-head { padding: 12px 14px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+  .sidebar-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 1px; color: var(--text-dim); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+  .sidebar-title .count { background: var(--panel); padding: 2px 7px; border-radius: 10px; color: var(--accent); font-weight: 700; font-size: 10px; }
+  .sidebar-title .sync-btn { background: transparent; border: none; color: var(--text-dim); font-size: 13px; padding: 0 6px; cursor: pointer; }
+  .sidebar-title .sync-btn:hover { color: var(--accent); background: transparent; border: none; }
+  .search { width: 100%; padding: 7px 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .search:focus { outline: none; border-color: var(--accent-dim); }
+
+  .case-list { flex: 1; overflow-y: auto; padding: 6px; }
+  .case-item { padding: 10px 12px; border-radius: 4px; margin-bottom: 2px; cursor: pointer; border: 1px solid transparent; transition: background 0.1s; }
+  .case-item:hover { background: var(--panel); }
+  .case-item.active { background: var(--panel-2); border-color: var(--border-strong); }
+  .case-item .case-id { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); font-weight: 700; }
+  .case-item .case-name { font-size: 12px; color: var(--text); margin-top: 3px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .case-item .case-meta { display: flex; gap: 8px; margin-top: 6px; font-size: 10px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+  .case-item .case-meta .validated { color: var(--ok); }
+  .case-item .case-meta .unvalidated { color: var(--warn); }
+
+  .empty { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 12px; line-height: 1.6; }
+  .sidebar-foot { padding: 10px; border-top: 1px solid var(--border); display: flex; gap: 6px; }
+  .sidebar-foot button { flex: 1; font-size: 11px; }
+
+  .editor-wrap { overflow-y: auto; padding: 20px 30px 60px; }
+  .editor-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 5; padding-top: 8px; }
+  .editor-title { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text); }
+  .editor-title .mode { color: var(--text-muted); font-weight: 400; margin-right: 8px; }
+  .editor-title .case-id-display { color: var(--accent); }
+  .editor-actions { display: flex; gap: 6px; align-items: center; }
+
+  .no-selection { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); gap: 12px; padding: 20px; }
+  .no-selection h2 { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500; color: var(--text-dim); margin: 0; }
+  .no-selection .hint { font-size: 12px; max-width: 380px; text-align: center; line-height: 1.6; }
+
+  .field { margin-bottom: 14px; }
+  .field > label { display: block; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500; color: var(--text-dim); margin-bottom: 4px; letter-spacing: 0.3px; }
+  .field > label .req { color: var(--err); margin-left: 3px; }
+  .field > label .type { color: var(--text-muted); font-weight: 400; margin-left: 6px; font-size: 10px; }
+  .field .desc { font-size: 11px; color: var(--text-muted); margin-bottom: 5px; line-height: 1.4; font-style: italic; }
+
+  input[type="text"], input[type="number"], input[type="password"], textarea, select { width: 100%; padding: 8px 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 3px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.5; }
+  textarea { min-height: 72px; resize: vertical; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent-dim); background: var(--panel-2); }
+  input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; margin-right: 8px; vertical-align: middle; }
+
+  .object-group { border: 1px solid var(--border); border-radius: 4px; padding: 14px; margin-bottom: 14px; background: rgba(255,255,255,0.015); }
+  .object-group > .group-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin: -14px -14px 14px; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--panel); border-radius: 4px 4px 0 0; display: flex; justify-content: space-between; align-items: center; }
+  .object-group > .group-title .req { color: var(--err); font-size: 10px; }
+
+  .array-items { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
+  .array-item { display: flex; gap: 6px; align-items: flex-start; }
+  .array-item > div:first-child { flex: 1; }
+  .array-item > button { flex-shrink: 0; margin-top: 2px; }
+  .array-item-complex { border: 1px solid var(--border); border-radius: 3px; padding: 10px; background: var(--panel); position: relative; }
+  .array-item-complex .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px dashed var(--border-strong); font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+  .add-btn { font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 5px 10px; background: transparent; border: 1px dashed var(--border-strong); color: var(--text-dim); }
+  .add-btn:hover { border-color: var(--accent); color: var(--accent); background: transparent; }
+
+  .tag-input-wrap { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; background: var(--panel); border: 1px solid var(--border); border-radius: 3px; min-height: 34px; }
+  .tag-input-wrap:focus-within { border-color: var(--accent-dim); }
+  .tag { display: inline-flex; align-items: center; gap: 4px; background: var(--panel-2); border: 1px solid var(--border-strong); color: var(--text); padding: 2px 6px; border-radius: 3px; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .tag button { padding: 0 3px; background: transparent; border: none; color: var(--text-muted); font-size: 13px; line-height: 1; }
+  .tag button:hover { color: var(--err); background: transparent; border: none; }
+  .tag-input-wrap input { flex: 1; min-width: 100px; background: transparent; border: none; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 3px; }
+  .tag-input-wrap input:focus { outline: none; }
+
+  #toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 6px; z-index: 9999; }
+  .toast { padding: 10px 14px; background: var(--panel-2); border: 1px solid var(--border-strong); border-left: 3px solid var(--accent); border-radius: 3px; font-family: 'JetBrains Mono', monospace; font-size: 12px; min-width: 220px; max-width: 380px; animation: slideIn 0.2s ease; }
+  .toast.err { border-left-color: var(--err); }
+  .toast.warn { border-left-color: var(--warn); }
+  @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  .validation-panel { margin-bottom: 16px; padding: 10px 12px; background: #2a1818; border: 1px solid #4a2525; border-radius: 3px; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .validation-panel.ok { background: #162a1e; border-color: #254a32; color: var(--ok); }
+  .validation-panel.err { color: var(--err); }
+  .validation-panel ul { margin: 4px 0 0; padding-left: 18px; }
+  .validation-panel li { line-height: 1.6; }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+  .modal { background: var(--bg-2); border: 1px solid var(--border-strong); border-radius: 6px; padding: 24px; min-width: 480px; max-width: 70vw; max-height: 85vh; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+  .modal h3 { margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent); letter-spacing: 0.5px; }
+  .modal .hint { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); line-height: 1.6; }
+  .modal .hint code { background: var(--panel); padding: 1px 5px; border-radius: 2px; color: var(--blue); }
+  .modal .hint a { color: var(--blue); text-decoration: none; }
+  .modal .hint a:hover { text-decoration: underline; }
+  .modal textarea { min-height: 280px; font-size: 11px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+  .modal .row { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: center; }
+  .modal .row label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); }
+
+  .hidden { display: none !important; }
+
+  .loading-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); z-index: 9999; }
+  .loading-overlay::before { content: ''; width: 14px; height: 14px; border: 2px solid var(--border-strong); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 10px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .sync-status { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-muted); padding: 4px 8px; display: inline-flex; align-items: center; }
+  .sync-status .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; }
+  .sync-status.ok .dot { background: var(--ok); }
+  .sync-status.err .dot { background: var(--err); }
+  .sync-status.sync .dot { background: var(--warn); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+</style>
+</head>
+<body>
+<div id="loading" class="loading-overlay">Cargando base documental</div>
+
+<header>
+  <div class="brand">
+    <span class="dot"></span>
+    <span>TRIAGE · KB</span>
+    <span class="sub">v2.0 / github-sync</span>
+    <span class="repo-info" id="repo-info"></span>
+  </div>
+  <div class="top-actions">
+    <span class="sync-status ok" id="sync-status"><span class="dot"></span><span id="sync-text">idle</span></span>
+    <button class="ghost" id="btn-settings">⚙ Config</button>
+    <button class="ghost" id="btn-import">↓ Importar JSON</button>
+    <button class="primary" id="btn-new">+ Nuevo caso</button>
+  </div>
+</header>
+
+<main>
+  <aside>
+    <div class="sidebar-head">
+      <div class="sidebar-title">
+        <span>Casos</span>
+        <span>
+          <button class="sync-btn" id="btn-sync" title="Recargar desde el repo">↻</button>
+          <span class="count" id="case-count">0</span>
+        </span>
+      </div>
+      <input type="text" id="search" class="search" placeholder="buscar…" />
+    </div>
+    <div class="case-list" id="case-list"></div>
+    <div class="sidebar-foot">
+      <button class="ghost" id="btn-export-all">↓ Exportar todos</button>
+    </div>
+  </aside>
+
+  <section class="editor-wrap" id="editor-wrap">
+    <div id="no-selection" class="no-selection">
+      <h2>// no case selected</h2>
+      <div class="hint">Selecciona un caso de la lista, crea uno nuevo, o importa un JSON existente. Los cambios se guardan como commits en el repo de GitHub.</div>
+      <button class="primary" id="btn-new-2">+ Nuevo caso</button>
+    </div>
+    <div id="editor" class="hidden"></div>
+  </section>
+</main>
+
+<div id="toast-container"></div>
+
+<div id="config-modal" class="modal-backdrop hidden">
+  <div class="modal">
+    <h3>// Configuración GitHub</h3>
+    <div class="hint">
+      Los casos se guardarán como <code>cases/CASE-YYYY-NNN.json</code> en el repo indicado.<br><br>
+      Necesitas un <strong>Personal Access Token</strong> con permiso <code>repo</code> (clásico) o <code>Contents: Read/Write</code> (fine-grained).<br>
+      → <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a><br><br>
+      El token se guarda <strong>solo en tu navegador</strong> (localStorage) y va directamente a la API de GitHub.
+    </div>
+    <div class="row"><label>owner</label><input type="text" id="cfg-owner" placeholder="mi-org-o-usuario"/></div>
+    <div class="row"><label>repo</label><input type="text" id="cfg-repo" placeholder="triage-kb"/></div>
+    <div class="row"><label>branch</label><input type="text" id="cfg-branch" placeholder="main" value="main"/></div>
+    <div class="row"><label>cases path</label><input type="text" id="cfg-path" placeholder="cases" value="cases"/></div>
+    <div class="row"><label>token</label><input type="password" id="cfg-token" placeholder="ghp_... o github_pat_..."/></div>
+    <div class="row"><label>author name</label><input type="text" id="cfg-author" placeholder="Tu nombre para los commits"/></div>
+    <div class="modal-actions">
+      <button class="danger" id="btn-config-clear">Borrar config</button>
+      <button class="ghost" id="btn-config-cancel">Cancelar</button>
+      <button class="primary" id="btn-config-save">Probar y guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="import-modal" class="modal-backdrop hidden">
+  <div class="modal">
+    <h3>// Importar caso desde JSON</h3>
+    <div class="hint">Pega un objeto JSON (o un array) que cumpla el schema. Si el case_id ya existe, se sobreescribirá.</div>
+    <textarea id="import-textarea" placeholder='{ "case_id": "CASE-2026-001", ... }'></textarea>
+    <div class="modal-actions">
+      <button class="ghost" id="btn-import-cancel">Cancelar</button>
+      <button class="ghost" id="btn-import-file">📁 Desde archivo…</button>
+      <input type="file" id="file-input" accept="application/json,.json" multiple style="display:none">
+      <button class="primary" id="btn-import-confirm">Importar al repo</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+const DEFAULT_SCHEMA = {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Triage Case",
+  "type": "object",
+  "required": ["case_id", "name", "tags", "context", "decision", "similarity_keys", "metadata"],
+  "properties": {
+    "case_id": { "type": "string", "pattern": "^CASE-\\d{4}-\\d{3}$" },
+    "name": { "type": "string" },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "context": {
+      "type": "object",
+      "required": ["session_messages", "job_status", "job_type"],
+      "properties": {
+        "session_messages": { "type": "array", "items": { "type": "string" }, "minItems": 1, "description": "Session messages from the job-execution, as seen by the operator in the dashboard" },
+        "job_status": { "type": "string", "enum": ["Failed", "Warning", "Success"] },
+        "job_type": { "type": "string" },
+        "consecutive_failures": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "existing_tickets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ticket_id", "status", "reason"],
+        "properties": {
+          "ticket_id": { "type": "string", "description": "MongoDB _id of the ticket document" },
+          "cw_ticket_id": { "type": "integer", "description": "ConnectWise ticket ID" },
+          "status": { "type": "string", "enum": ["open", "closed"] },
+          "summary": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "client_instructions": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "required": ["level", "instruction"],
+        "properties": {
+          "level": { "type": "string", "enum": ["company", "job"] },
+          "instruction": { "type": "string" }
+        }
+      },
+      "description": "Client instructions at company-level (apply to all jobs) or job-level (apply to this specific job)"
+    },
+    "decision": {
+      "type": "object",
+      "required": ["action", "reasoning", "tickets"],
+      "properties": {
+        "action": { "type": "string", "enum": ["CREATE_NEW_TICKET","CREATE_ADDITIONAL_TICKET","UPDATE_EXISTING_TICKET","SKIP_BY_INSTRUCTION","SKIP_BY_CONTEXT","ESCALATE_EXISTING","MULTI_TICKET"] },
+        "requires_client_action": { "type": ["boolean", "null"], "description": "Whether the action requires the client to do something. Set by the operator when validating the case." },
+        "requires_client_action_note": { "type": ["string", "null"], "description": "Optional note explaining what specific action the client needs to take." },
+        "reasoning": { "type": "string" },
+        "tickets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["subject", "key_message"],
+            "properties": {
+              "subject": { "type": "string" },
+              "key_message": { "type": "string" },
+              "references_ticket": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "similarity_keys": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "metadata": {
+      "type": "object",
+      "required": ["created_by", "case_created_at", "job_executed_at", "validated"],
+      "properties": {
+        "created_by": { "type": "string" },
+        "case_created_at": { "type": "string", "description": "Date the case document was created (YYYY-MM-DD)" },
+        "job_executed_at": { "type": "string", "description": "Date the source job-execution ran (YYYY-MM-DD)" },
+        "validated": { "type": "boolean" },
+        "source_job_id": { "type": "string" },
+        "company_name": { "type": "string" },
+        "job_name": { "type": "string" },
+        "server_name": { "type": "string" }
+      }
+    }
+  }
+};
+let SCHEMA = DEFAULT_SCHEMA;
+
+const state = { config: null, cases: {}, currentId: null, draft: null, dirty: false, searchQuery: '' };
+
+const CFG_KEY = 'triage-kb-config';
+function loadConfig() { try { const raw = localStorage.getItem(CFG_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; } }
+function saveConfig(cfg) { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); }
+function clearConfig() { localStorage.removeItem(CFG_KEY); }
+
+async function ghFetch(urlPath, opts = {}) {
+  const { config } = state;
+  const headers = { 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'Authorization': `Bearer ${config.token}`, ...(opts.headers || {}) };
+  if (opts.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+  const url = urlPath.startsWith('http') ? urlPath : `https://api.github.com${urlPath}`;
+  const res = await fetch(url, { ...opts, headers });
+  if (!res.ok) {
+    const text = await res.text();
+    let msg = `${res.status} ${res.statusText}`;
+    try { const j = JSON.parse(text); if (j.message) msg = `${res.status} · ${j.message}`; } catch {}
+    throw new Error(msg);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+function utf8ToBase64(str) { return btoa(unescape(encodeURIComponent(str))); }
+function base64ToUtf8(b64) { return decodeURIComponent(escape(atob(b64.replace(/\n/g, '')))); }
+
+async function ghTestConnection(cfg) {
+  const headers = { 'Authorization': `Bearer ${cfg.token}`, 'Accept': 'application/vnd.github+json' };
+  const res = await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}`, { headers });
+  if (!res.ok) {
+    const text = await res.text();
+    let msg = `${res.status} ${res.statusText}`;
+    try { const j = JSON.parse(text); if (j.message) msg = `${res.status} · ${j.message}`; } catch {}
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+async function ghListCases() {
+  const { config } = state;
+  try {
+    const data = await ghFetch(`/repos/${config.owner}/${config.repo}/contents/${config.path}?ref=${encodeURIComponent(config.branch)}`);
+    return Array.isArray(data) ? data.filter(f => f.type === 'file' && f.name.endsWith('.json')) : [];
+  } catch (e) {
+    if (e.message.includes('404')) return [];
+    throw e;
+  }
+}
+
+async function ghGetFile(path) {
+  const { config } = state;
+  return ghFetch(`/repos/${config.owner}/${config.repo}/contents/${path}?ref=${encodeURIComponent(config.branch)}`);
+}
+
+async function ghPutFile(path, content, message, sha) {
+  const { config } = state;
+  const body = { message, content: utf8ToBase64(content), branch: config.branch };
+  if (sha) body.sha = sha;
+  if (config.author) body.committer = { name: config.author, email: `${config.author.toLowerCase().replace(/\s+/g, '-')}@users.noreply.github.com` };
+  return ghFetch(`/repos/${config.owner}/${config.repo}/contents/${path}`, { method: 'PUT', body: JSON.stringify(body) });
+}
+
+async function ghDeleteFile(path, sha, message) {
+  const { config } = state;
+  const body = { message, sha, branch: config.branch };
+  if (config.author) body.committer = { name: config.author, email: `${config.author.toLowerCase().replace(/\s+/g, '-')}@users.noreply.github.com` };
+  return ghFetch(`/repos/${config.owner}/${config.repo}/contents/${path}`, { method: 'DELETE', body: JSON.stringify(body) });
+}
+
+async function ghTryLoadSchema() {
+  try {
+    const file = await ghGetFile('schema.json');
+    SCHEMA = JSON.parse(base64ToUtf8(file.content));
+    return true;
+  } catch {
+    SCHEMA = DEFAULT_SCHEMA;
+    return false;
+  }
+}
+
+function typeOf(schema) { const t = schema.type; if (Array.isArray(t)) return t.filter(x => x !== 'null')[0] || 'string'; return t || 'string'; }
+function isNullable(schema) { return Array.isArray(schema.type) && schema.type.includes('null'); }
+function defaultForSchema(schema) {
+  if (schema.enum) return '';
+  const t = typeOf(schema);
+  switch (t) {
+    case 'string': return '';
+    case 'integer': case 'number': return null;
+    case 'boolean': return false;
+    case 'array': return [];
+    case 'object': {
+      const obj = {};
+      const props = schema.properties || {};
+      for (const [k, v] of Object.entries(props)) if ((schema.required || []).includes(k)) obj[k] = defaultForSchema(v);
+      return obj;
+    }
+    default: return null;
+  }
+}
+function deepClone(x) { return JSON.parse(JSON.stringify(x)); }
+
+function validate(data, schema, path = '$') {
+  const errors = [];
+  if (data === null || data === undefined) { if (isNullable(schema)) return errors; }
+  const t = typeOf(schema);
+  if (schema.enum && !schema.enum.includes(data)) {
+    if (!(data === '' && isNullable(schema))) errors.push(`${path}: debe ser uno de [${schema.enum.join(', ')}]`);
+  }
+  if (t === 'string') {
+    if (data !== null && typeof data !== 'string' && !(data === undefined)) errors.push(`${path}: debe ser string`);
+    if (typeof data === 'string' && schema.pattern) {
+      const re = new RegExp(schema.pattern);
+      if (!re.test(data)) errors.push(`${path}: no cumple el patrón ${schema.pattern}`);
+    }
+  } else if (t === 'integer' || t === 'number') {
+    if (data !== null && data !== undefined && data !== '') {
+      if (typeof data !== 'number' || Number.isNaN(data)) errors.push(`${path}: debe ser un número`);
+      else if (t === 'integer' && !Number.isInteger(data)) errors.push(`${path}: debe ser entero`);
+      else if (schema.minimum !== undefined && data < schema.minimum) errors.push(`${path}: debe ser >= ${schema.minimum}`);
+    }
+  } else if (t === 'boolean') {
+    if (typeof data !== 'boolean' && !(data === null && isNullable(schema))) errors.push(`${path}: debe ser booleano`);
+  } else if (t === 'array') {
+    if (!Array.isArray(data)) { if (!(data === null && isNullable(schema))) errors.push(`${path}: debe ser array`); }
+    else {
+      if (schema.minItems !== undefined && data.length < schema.minItems) errors.push(`${path}: requiere al menos ${schema.minItems} elemento(s)`);
+      if (schema.items) data.forEach((item, i) => errors.push(...validate(item, schema.items, `${path}[${i}]`)));
+    }
+  } else if (t === 'object') {
+    if (typeof data !== 'object' || data === null || Array.isArray(data)) errors.push(`${path}: debe ser objeto`);
+    else {
+      for (const req of (schema.required || [])) {
+        const v = data[req];
+        if (v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0)) errors.push(`${path}.${req}: requerido`);
+      }
+      for (const [k, v] of Object.entries(data)) if (schema.properties && schema.properties[k]) errors.push(...validate(v, schema.properties[k], `${path}.${k}`));
+    }
+  }
+  return errors;
+}
+
+function createEl(tag, attrs = {}, children = []) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') el.className = v;
+    else if (k === 'style') el.setAttribute('style', v);
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2).toLowerCase(), v);
+    else if (k === 'checked' || k === 'disabled' || k === 'selected') { if (v) el[k] = true; }
+    else el.setAttribute(k, v);
+  }
+  (Array.isArray(children) ? children : [children]).forEach(c => {
+    if (c === null || c === undefined || c === false) return;
+    if (typeof c === 'string' || typeof c === 'number') el.appendChild(document.createTextNode(c));
+    else el.appendChild(c);
+  });
+  return el;
+}
+
+function getAtPath(obj, pathArr) { let cur = obj; for (const p of pathArr) { if (cur == null) return undefined; cur = cur[p]; } return cur; }
+function setAtPath(obj, pathArr, value) {
+  let cur = obj;
+  for (let i = 0; i < pathArr.length - 1; i++) {
+    if (cur[pathArr[i]] == null) cur[pathArr[i]] = typeof pathArr[i + 1] === 'number' ? [] : {};
+    cur = cur[pathArr[i]];
+  }
+  cur[pathArr[pathArr.length - 1]] = value;
+}
+function markDirty() { state.dirty = true; updateHeaderDirtyState(); }
+
+function renderField(key, schema, pathArr, required) {
+  const type = typeOf(schema);
+  const desc = schema.description;
+  if (schema.enum) {
+    const wrap = createEl('div', { class: 'field' });
+    wrap.appendChild(createEl('label', {}, [ key, required ? createEl('span', { class: 'req' }, '*') : null, createEl('span', { class: 'type' }, 'enum') ]));
+    if (desc) wrap.appendChild(createEl('div', { class: 'desc' }, desc));
+    const select = createEl('select', {});
+    const current = getAtPath(state.draft, pathArr);
+    for (const v of ['', ...schema.enum]) {
+      const o = createEl('option', { value: v }, v || '—');
+      if (current === v || (current == null && v === '')) o.selected = true;
+      select.appendChild(o);
+    }
+    select.addEventListener('change', () => { setAtPath(state.draft, pathArr, select.value || null); markDirty(); });
+    wrap.appendChild(select);
+    return wrap;
+  }
+  if (type === 'boolean' || (Array.isArray(schema.type) && schema.type.includes('boolean'))) {
+    const wrap = createEl('div', { class: 'field' });
+    const current = getAtPath(state.draft, pathArr);
+    const labelEl = createEl('label', { style: 'display:flex;align-items:center;cursor:pointer;' });
+    const cb = createEl('input', { type: 'checkbox' });
+    cb.checked = !!current;
+    cb.addEventListener('change', () => { setAtPath(state.draft, pathArr, cb.checked); markDirty(); });
+    labelEl.appendChild(cb);
+    labelEl.appendChild(document.createTextNode(key));
+    if (required) labelEl.appendChild(createEl('span', { class: 'req' }, '*'));
+    labelEl.appendChild(createEl('span', { class: 'type' }, isNullable(schema) ? 'bool?' : 'bool'));
+    wrap.appendChild(labelEl);
+    if (desc) wrap.appendChild(createEl('div', { class: 'desc' }, desc));
+    return wrap;
+  }
+  if (type === 'array') return renderArray(key, schema, pathArr, required);
+  if (type === 'object') return renderObject(key, schema, pathArr, required);
+  const wrap = createEl('div', { class: 'field' });
+  wrap.appendChild(createEl('label', {}, [
+    key, required ? createEl('span', { class: 'req' }, '*') : null,
+    createEl('span', { class: 'type' }, type + (isNullable(schema) ? '?' : '') + (schema.pattern ? ' · ' + schema.pattern : ''))
+  ]));
+  if (desc) wrap.appendChild(createEl('div', { class: 'desc' }, desc));
+  const current = getAtPath(state.draft, pathArr);
+  const isLong = type === 'string' && (key === 'reasoning' || key === 'key_message' || key === 'instruction' || key === 'summary');
+  let input;
+  if (isLong) {
+    input = createEl('textarea', {});
+    input.value = current == null ? '' : current;
+    input.addEventListener('input', () => { setAtPath(state.draft, pathArr, input.value); markDirty(); });
+  } else if (type === 'integer' || type === 'number') {
+    input = createEl('input', { type: 'number' });
+    if (type === 'integer') input.step = '1';
+    input.value = current == null ? '' : current;
+    input.addEventListener('input', () => {
+      const v = input.value === '' ? null : (type === 'integer' ? parseInt(input.value, 10) : parseFloat(input.value));
+      setAtPath(state.draft, pathArr, Number.isNaN(v) ? null : v);
+      markDirty();
+    });
+  } else {
+    input = createEl('input', { type: 'text' });
+    input.value = current == null ? '' : current;
+    if (schema.pattern) input.setAttribute('pattern', schema.pattern);
+    input.addEventListener('input', () => { setAtPath(state.draft, pathArr, input.value); markDirty(); });
+  }
+  wrap.appendChild(input);
+  return wrap;
+}
+
+function renderObject(key, schema, pathArr, required) {
+  const wrap = createEl('div', { class: 'object-group' });
+  wrap.appendChild(createEl('div', { class: 'group-title' }, [ key || 'object', required ? createEl('span', { class: 'req' }, 'required') : null ]));
+  if (schema.description) wrap.appendChild(createEl('div', { class: 'desc', style: 'margin-bottom:10px;' }, schema.description));
+  if (getAtPath(state.draft, pathArr) == null) setAtPath(state.draft, pathArr, {});
+  const reqs = schema.required || [];
+  for (const [k, v] of Object.entries(schema.properties || {})) wrap.appendChild(renderField(k, v, [...pathArr, k], reqs.includes(k)));
+  return wrap;
+}
+
+function renderArray(key, schema, pathArr, required) {
+  const itemsSchema = schema.items || { type: 'string' };
+  const itemType = typeOf(itemsSchema);
+  const wrap = createEl('div', { class: 'field' });
+  wrap.appendChild(createEl('label', {}, [
+    key,
+    required || schema.minItems ? createEl('span', { class: 'req' }, '*') : null,
+    createEl('span', { class: 'type' }, `array<${itemsSchema.enum ? 'enum' : itemType}>` + (schema.minItems ? ` · min ${schema.minItems}` : ''))
+  ]));
+  if (schema.description) wrap.appendChild(createEl('div', { class: 'desc' }, schema.description));
+  if (!Array.isArray(getAtPath(state.draft, pathArr))) setAtPath(state.draft, pathArr, []);
+
+  const isSimpleStrArr = itemType === 'string' && !itemsSchema.enum && (key === 'tags' || key === 'similarity_keys');
+  if (isSimpleStrArr) {
+    const tagWrap = createEl('div', { class: 'tag-input-wrap' });
+    const renderTags = () => {
+      tagWrap.innerHTML = '';
+      const arr = getAtPath(state.draft, pathArr) || [];
+      arr.forEach((t, i) => {
+        const tag = createEl('span', { class: 'tag' }, [
+          t,
+          createEl('button', { type: 'button', onclick: () => { getAtPath(state.draft, pathArr).splice(i, 1); markDirty(); renderTags(); } }, '×')
+        ]);
+        tagWrap.appendChild(tag);
+      });
+      const inp = createEl('input', { type: 'text', placeholder: 'añadir + Enter…' });
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ',') {
+          e.preventDefault();
+          const val = inp.value.trim();
+          if (val) { getAtPath(state.draft, pathArr).push(val); markDirty(); renderTags(); }
+        }
+      });
+      inp.addEventListener('blur', () => {
+        const val = inp.value.trim();
+        if (val) { getAtPath(state.draft, pathArr).push(val); markDirty(); renderTags(); }
+      });
+      tagWrap.appendChild(inp);
+    };
+    renderTags();
+    wrap.appendChild(tagWrap);
+    return wrap;
+  }
+
+  const itemsWrap = createEl('div', { class: 'array-items' });
+  const renderItems = () => {
+    itemsWrap.innerHTML = '';
+    const arr = getAtPath(state.draft, pathArr) || [];
+    arr.forEach((_, i) => {
+      const itemPath = [...pathArr, i];
+      if (itemType === 'object') {
+        const box = createEl('div', { class: 'array-item-complex' });
+        box.appendChild(createEl('div', { class: 'item-header' }, [
+          `// ${key}[${i}]`,
+          createEl('button', { class: 'danger', type: 'button', onclick: () => { getAtPath(state.draft, pathArr).splice(i, 1); markDirty(); renderItems(); }}, '× eliminar')
+        ]));
+        const reqs = itemsSchema.required || [];
+        for (const [k, v] of Object.entries(itemsSchema.properties || {})) box.appendChild(renderField(k, v, [...itemPath, k], reqs.includes(k)));
+        itemsWrap.appendChild(box);
+      } else {
+        const row = createEl('div', { class: 'array-item' });
+        const inner = createEl('div', {});
+        inner.appendChild(renderField(`${key}[${i}]`, itemsSchema, itemPath, false));
+        const l = inner.querySelector('label'); if (l) l.style.display = 'none';
+        const d = inner.querySelector('.desc'); if (d) d.style.display = 'none';
+        row.appendChild(inner);
+        row.appendChild(createEl('button', { class: 'danger', type: 'button', onclick: () => { getAtPath(state.draft, pathArr).splice(i, 1); markDirty(); renderItems(); }}, '×'));
+        itemsWrap.appendChild(row);
+      }
+    });
+  };
+  renderItems();
+  wrap.appendChild(itemsWrap);
+  wrap.appendChild(createEl('button', { class: 'add-btn', type: 'button', onclick: () => {
+    getAtPath(state.draft, pathArr).push(defaultForSchema(itemsSchema));
+    markDirty(); renderItems();
+  }}, `+ añadir ${itemType === 'object' ? 'item' : 'valor'}`));
+  return wrap;
+}
+
+function renderSidebar() {
+  const list = document.getElementById('case-list');
+  const q = state.searchQuery.toLowerCase();
+  const items = Object.values(state.cases).map(c => c.data).filter(c => {
+    if (!q) return true;
+    const hay = (c.case_id + ' ' + (c.name || '') + ' ' + (c.tags || []).join(' ')).toLowerCase();
+    return hay.includes(q);
+  }).sort((a, b) => (b.case_id || '').localeCompare(a.case_id || ''));
+  document.getElementById('case-count').textContent = Object.keys(state.cases).length;
+  if (items.length === 0) {
+    list.innerHTML = '';
+    list.appendChild(createEl('div', { class: 'empty' }, state.searchQuery ? 'sin resultados' : (state.config ? 'aún no hay casos en el repo' : 'configura GitHub para empezar')));
+    return;
+  }
+  list.innerHTML = '';
+  for (const c of items) {
+    const el = createEl('div', {
+      class: 'case-item' + (state.currentId === c.case_id ? ' active' : ''),
+      onclick: () => selectCase(c.case_id)
+    }, [
+      createEl('div', { class: 'case-id' }, c.case_id || '(sin id)'),
+      createEl('div', { class: 'case-name' }, c.name || '(sin nombre)'),
+      createEl('div', { class: 'case-meta' }, [
+        (c.metadata && c.metadata.validated) ? createEl('span', { class: 'validated' }, '✓ validated') : createEl('span', { class: 'unvalidated' }, '○ pending'),
+        createEl('span', {}, (c.decision && c.decision.action) ? c.decision.action.replace(/_/g, ' ').toLowerCase() : '—')
+      ])
+    ]);
+    list.appendChild(el);
+  }
+}
+
+function updateHeaderDirtyState() {
+  const t = document.querySelector('.editor-title');
+  if (!t) return;
+  const ex = t.querySelector('.dirty');
+  if (state.dirty && !ex) t.appendChild(createEl('span', { class: 'dirty', style: 'color: var(--warn); margin-left: 8px;' }, '● unsaved'));
+  else if (!state.dirty && ex) ex.remove();
+}
+
+function renderEditor() {
+  const editor = document.getElementById('editor');
+  const none = document.getElementById('no-selection');
+  if (!state.draft) { editor.classList.add('hidden'); none.classList.remove('hidden'); return; }
+  none.classList.add('hidden'); editor.classList.remove('hidden'); editor.innerHTML = '';
+  const isNew = !state.currentId;
+  const head = createEl('div', { class: 'editor-head' }, [
+    createEl('div', { class: 'editor-title' }, [
+      createEl('span', { class: 'mode' }, isNew ? '// NEW' : '// EDIT'),
+      createEl('span', { class: 'case-id-display' }, state.draft.case_id || '(sin id)')
+    ]),
+    createEl('div', { class: 'editor-actions' }, [
+      createEl('button', { class: 'ghost', onclick: () => exportCase(state.draft) }, '↓ JSON'),
+      !isNew ? createEl('button', { class: 'danger', onclick: onDelete }, '× Eliminar') : null,
+      createEl('button', { class: 'primary', onclick: onSave }, '✓ Commit al repo')
+    ])
+  ]);
+  editor.appendChild(head);
+  editor.appendChild(createEl('div', { id: 'val-panel' }));
+  const reqs = SCHEMA.required || [];
+  for (const [k, v] of Object.entries(SCHEMA.properties)) editor.appendChild(renderField(k, v, [k], reqs.includes(k)));
+  refreshValidationPanel();
+  updateHeaderDirtyState();
+  editor.addEventListener('input', refreshValidationPanel);
+  editor.addEventListener('change', refreshValidationPanel);
+}
+
+function refreshValidationPanel() {
+  const panel = document.getElementById('val-panel');
+  if (!panel) return;
+  const errors = validate(state.draft, SCHEMA);
+  panel.innerHTML = '';
+  if (errors.length === 0) { panel.className = 'validation-panel ok'; panel.textContent = '✓ válido según el schema'; }
+  else {
+    panel.className = 'validation-panel err';
+    panel.appendChild(createEl('div', {}, `✗ ${errors.length} problema(s) de validación:`));
+    const ul = createEl('ul', {});
+    errors.slice(0, 12).forEach(e => ul.appendChild(createEl('li', {}, e)));
+    if (errors.length > 12) ul.appendChild(createEl('li', {}, `… y ${errors.length - 12} más`));
+    panel.appendChild(ul);
+  }
+}
+
+function updateRepoInfo() {
+  const el = document.getElementById('repo-info');
+  if (state.config) el.innerHTML = `<strong>${state.config.owner}/${state.config.repo}</strong> · ${state.config.branch}`;
+  else el.innerHTML = '<span style="color: var(--warn)">sin configurar</span>';
+}
+function setSyncStatus(status, text) {
+  const el = document.getElementById('sync-status');
+  const txt = document.getElementById('sync-text');
+  el.className = 'sync-status ' + status;
+  txt.textContent = text;
+}
+
+function selectCase(id) {
+  if (state.dirty) { if (!confirm('Tienes cambios sin guardar. ¿Descartar?')) return; }
+  const entry = state.cases[id];
+  if (!entry) return;
+  state.currentId = id;
+  state.draft = deepClone(entry.data);
+  state.dirty = false;
+  renderSidebar();
+  renderEditor();
+}
+
+function newCase() {
+  if (state.dirty) { if (!confirm('Tienes cambios sin guardar. ¿Descartar?')) return; }
+  state.currentId = null;
+  state.draft = defaultForSchema(SCHEMA);
+  state.draft.case_id = suggestNextId();
+  if (state.draft.metadata) {
+    state.draft.metadata.case_created_at = new Date().toISOString().slice(0, 10);
+    state.draft.metadata.job_executed_at = new Date().toISOString().slice(0, 10);
+    state.draft.metadata.validated = false;
+    if (state.config && state.config.author) state.draft.metadata.created_by = state.config.author;
+  }
+  state.dirty = false;
+  renderSidebar();
+  renderEditor();
+}
+
+function suggestNextId() {
+  const year = new Date().getFullYear();
+  const ids = Object.keys(state.cases).filter(id => id.startsWith(`CASE-${year}-`));
+  const maxN = ids.reduce((acc, id) => { const m = id.match(/^CASE-\d{4}-(\d{3})$/); return m ? Math.max(acc, parseInt(m[1], 10)) : acc; }, 0);
+  return `CASE-${year}-${String(maxN + 1).padStart(3, '0')}`;
+}
+
+async function onSave() {
+  if (!state.config) { toast('Configura GitHub primero', 'err'); openConfig(); return; }
+  const errors = validate(state.draft, SCHEMA);
+  if (errors.length > 0) { if (!confirm(`Hay ${errors.length} errores de validación. ¿Guardar igualmente?`)) return; }
+  const newId = state.draft.case_id;
+  if (!newId) { toast('case_id vacío', 'err'); return; }
+  setSyncStatus('sync', 'committing…');
+  const oldId = state.currentId;
+  const content = JSON.stringify(state.draft, null, 2) + '\n';
+  const newPath = `${state.config.path}/${newId}.json`;
+  try {
+    if (oldId && oldId !== newId) {
+      const oldEntry = state.cases[oldId];
+      if (oldEntry) {
+        await ghDeleteFile(oldEntry.path, oldEntry.sha, `chore(kb): rename ${oldId} → ${newId}`);
+        delete state.cases[oldId];
+      }
+    }
+    const existing = state.cases[newId];
+    const sha = existing ? existing.sha : undefined;
+    const msg = existing ? `update(kb): ${newId}` : `add(kb): ${newId}`;
+    const res = await ghPutFile(newPath, content, msg, sha);
+    state.cases[newId] = { data: deepClone(state.draft), sha: res.content.sha, path: newPath };
+    state.currentId = newId;
+    state.dirty = false;
+    renderSidebar(); renderEditor();
+    setSyncStatus('ok', 'synced');
+    toast('Commit realizado');
+  } catch (e) {
+    setSyncStatus('err', 'error');
+    toast('Error al commitear: ' + e.message, 'err');
+  }
+}
+
+async function onDelete() {
+  if (!state.currentId || !state.config) return;
+  const entry = state.cases[state.currentId];
+  if (!entry) return;
+  if (!confirm(`¿Eliminar el caso ${state.currentId} del repo? Se creará un commit de borrado.`)) return;
+  setSyncStatus('sync', 'deleting…');
+  try {
+    await ghDeleteFile(entry.path, entry.sha, `remove(kb): ${state.currentId}`);
+    delete state.cases[state.currentId];
+    state.currentId = null; state.draft = null; state.dirty = false;
+    renderSidebar(); renderEditor();
+    setSyncStatus('ok', 'synced');
+    toast('Eliminado del repo', 'warn');
+  } catch (e) {
+    setSyncStatus('err', 'error');
+    toast('Error al eliminar: ' + e.message, 'err');
+  }
+}
+
+function exportCase(data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = (data.case_id || 'case') + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function exportAll() {
+  const list = Object.values(state.cases).map(c => c.data);
+  if (list.length === 0) { toast('no hay casos', 'warn'); return; }
+  list.forEach((c, i) => setTimeout(() => exportCase(c), i * 200));
+  toast(`exportando ${list.length} archivo(s)…`);
+}
+
+async function syncFromRepo() {
+  if (!state.config) { openConfig(); return; }
+  setSyncStatus('sync', 'loading…');
+  try {
+    await ghTryLoadSchema();
+    const files = await ghListCases();
+    const newCases = {};
+    for (const f of files) {
+      try {
+        const full = await ghGetFile(f.path);
+        const data = JSON.parse(base64ToUtf8(full.content));
+        if (data && data.case_id) newCases[data.case_id] = { data, sha: full.sha, path: full.path };
+      } catch (e) { console.warn('skip file', f.path, e); }
+    }
+    state.cases = newCases;
+    setSyncStatus('ok', `${files.length} casos`);
+    renderSidebar();
+    if (state.currentId && !newCases[state.currentId]) { state.currentId = null; state.draft = null; state.dirty = false; renderEditor(); }
+  } catch (e) {
+    setSyncStatus('err', 'error');
+    toast('Error al cargar del repo: ' + e.message, 'err');
+  }
+}
+
+function openImportModal() {
+  if (!state.config) { toast('Configura GitHub primero', 'err'); openConfig(); return; }
+  document.getElementById('import-modal').classList.remove('hidden');
+  document.getElementById('import-textarea').value = '';
+  document.getElementById('import-textarea').focus();
+}
+function closeImportModal() { document.getElementById('import-modal').classList.add('hidden'); }
+
+async function importFromText(text) {
+  try {
+    const data = JSON.parse(text);
+    const arr = Array.isArray(data) ? data : [data];
+    let ok = 0, fail = 0;
+    setSyncStatus('sync', `importing 0/${arr.length}…`);
+    for (let i = 0; i < arr.length; i++) {
+      const c = arr[i];
+      if (!c || !c.case_id) { fail++; continue; }
+      const path = `${state.config.path}/${c.case_id}.json`;
+      const content = JSON.stringify(c, null, 2) + '\n';
+      const existing = state.cases[c.case_id];
+      const sha = existing ? existing.sha : undefined;
+      const msg = existing ? `update(kb): ${c.case_id} (import)` : `add(kb): ${c.case_id} (import)`;
+      try {
+        const res = await ghPutFile(path, content, msg, sha);
+        state.cases[c.case_id] = { data: c, sha: res.content.sha, path };
+        ok++;
+      } catch (e) { fail++; console.error('import failed', c.case_id, e); }
+      setSyncStatus('sync', `importing ${i+1}/${arr.length}…`);
+    }
+    setSyncStatus('ok', 'synced');
+    toast(`importados ${ok}${fail ? ` · ${fail} fallidos` : ''}`);
+    renderSidebar();
+    if (ok === 1 && arr.length === 1) selectCase(arr[0].case_id);
+  } catch (e) {
+    setSyncStatus('err', 'error');
+    toast('JSON inválido: ' + e.message, 'err');
+  }
+}
+
+async function importFromFiles(files) { for (const file of files) { const text = await file.text(); await importFromText(text); } }
+
+function openConfig() {
+  const cfg = state.config || {};
+  document.getElementById('cfg-owner').value = cfg.owner || '';
+  document.getElementById('cfg-repo').value = cfg.repo || '';
+  document.getElementById('cfg-branch').value = cfg.branch || 'main';
+  document.getElementById('cfg-path').value = cfg.path || 'cases';
+  document.getElementById('cfg-token').value = cfg.token || '';
+  document.getElementById('cfg-author').value = cfg.author || '';
+  document.getElementById('config-modal').classList.remove('hidden');
+}
+function closeConfig() { document.getElementById('config-modal').classList.add('hidden'); }
+
+async function saveConfigAndTest() {
+  const cfg = {
+    owner: document.getElementById('cfg-owner').value.trim(),
+    repo: document.getElementById('cfg-repo').value.trim(),
+    branch: document.getElementById('cfg-branch').value.trim() || 'main',
+    path: document.getElementById('cfg-path').value.trim() || 'cases',
+    token: document.getElementById('cfg-token').value.trim(),
+    author: document.getElementById('cfg-author').value.trim()
+  };
+  if (!cfg.owner || !cfg.repo || !cfg.token) { toast('owner, repo y token son obligatorios', 'err'); return; }
+  setSyncStatus('sync', 'testing…');
+  try {
+    const repo = await ghTestConnection(cfg);
+    if (!cfg.branch) cfg.branch = repo.default_branch;
+    state.config = cfg;
+    saveConfig(cfg);
+    updateRepoInfo();
+    setSyncStatus('ok', 'connected');
+    toast(`Conectado a ${cfg.owner}/${cfg.repo}`);
+    closeConfig();
+    await syncFromRepo();
+  } catch (e) {
+    setSyncStatus('err', 'error');
+    toast('Fallo al conectar: ' + e.message, 'err');
+  }
+}
+
+function toast(msg, kind = '') {
+  const t = createEl('div', { class: 'toast' + (kind ? ' ' + kind : '') }, msg);
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; }, 2800);
+  setTimeout(() => t.remove(), 3200);
+}
+
+async function init() {
+  state.config = loadConfig();
+  updateRepoInfo();
+  document.getElementById('loading').remove();
+
+  document.getElementById('btn-new').addEventListener('click', newCase);
+  document.getElementById('btn-new-2').addEventListener('click', newCase);
+  document.getElementById('btn-import').addEventListener('click', openImportModal);
+  document.getElementById('btn-export-all').addEventListener('click', exportAll);
+  document.getElementById('btn-settings').addEventListener('click', openConfig);
+  document.getElementById('btn-sync').addEventListener('click', syncFromRepo);
+  document.getElementById('search').addEventListener('input', (e) => { state.searchQuery = e.target.value; renderSidebar(); });
+
+  document.getElementById('btn-config-cancel').addEventListener('click', closeConfig);
+  document.getElementById('btn-config-save').addEventListener('click', saveConfigAndTest);
+  document.getElementById('btn-config-clear').addEventListener('click', () => {
+    if (!confirm('¿Borrar la configuración local? (no afecta al repo)')) return;
+    clearConfig(); state.config = null; state.cases = {}; state.currentId = null; state.draft = null;
+    updateRepoInfo(); setSyncStatus('err', 'unconfigured'); renderSidebar(); renderEditor();
+    closeConfig();
+  });
+
+  document.getElementById('btn-import-cancel').addEventListener('click', closeImportModal);
+  document.getElementById('btn-import-confirm').addEventListener('click', async () => {
+    const text = document.getElementById('import-textarea').value.trim();
+    if (!text) return;
+    await importFromText(text);
+    closeImportModal();
+  });
+  document.getElementById('btn-import-file').addEventListener('click', () => document.getElementById('file-input').click());
+  document.getElementById('file-input').addEventListener('change', async (e) => {
+    if (e.target.files.length > 0) { await importFromFiles(e.target.files); closeImportModal(); e.target.value = ''; }
+  });
+
+  window.addEventListener('beforeunload', (e) => { if (state.dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+  renderSidebar();
+  renderEditor();
+
+  if (state.config) { await syncFromRepo(); }
+  else { setSyncStatus('err', 'unconfigured'); openConfig(); }
+}
+
+init();
+</script>
+</body>
+</html>
