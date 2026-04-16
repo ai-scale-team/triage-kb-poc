@@ -1,0 +1,60 @@
+{
+  "case_id": "CASE-2026-002",
+  "name": "BACKUP CASE TEST",
+  "tags": [
+    "VEEM",
+    "FAILURE",
+    "LOW SPACE"
+  ],
+  "context": {
+    "session_messages": [
+      "Error: Failed to connect to backup repository. Network path not found or access denied."
+    ],
+    "job_status": "Failed",
+    "job_type": "backup",
+    "consecutive_failures": 1
+  },
+  "decision": {
+    "action": "CREATE_NEW_TICKET",
+    "reasoning": "reasoning of ticket",
+    "tickets": [
+      {
+        "subject": "subject of ticket",
+        "key_message": "message of ticket",
+        "references_ticket": "2222222"
+      }
+    ],
+    "requires_client_action": true,
+    "requires_client_action_note": "required action note"
+  },
+  "similarity_keys": [
+    "job",
+    "cannot find Linux guest credentials",
+    "guest processing"
+  ],
+  "metadata": {
+    "created_by": "mcast team",
+    "case_created_at": "2026-04-16",
+    "job_executed_at": "2026-04-16",
+    "validated": false,
+    "source_job_id": "7777777777777777",
+    "company_name": "company xxxxxx",
+    "job_name": "job_xxxxx",
+    "server_name": "serverxxxxxx"
+  },
+  "existing_tickets": [
+    {
+      "ticket_id": "32211",
+      "status": "open",
+      "reason": "reasoon of ticket",
+      "cw_ticket_id": 12131213,
+      "summary": "summary of ticket"
+    }
+  ],
+  "client_instructions": [
+    {
+      "level": "job",
+      "instruction": "Skip the failures of this job. The client is already aware."
+    }
+  ]
+}
