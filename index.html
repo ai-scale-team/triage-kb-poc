@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -76,6 +76,7 @@
   .field { margin-bottom: 14px; }
   .field > label { display: block; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500; color: var(--text-dim); margin-bottom: 4px; letter-spacing: 0.3px; }
   .field > label .req { color: var(--err); margin-left: 3px; }
+  .field > label .opt { color: var(--text-muted); margin-left: 6px; font-size: 10px; font-style: italic; }
   .field > label .type { color: var(--text-muted); font-weight: 400; margin-left: 6px; font-size: 10px; }
   .field .desc { font-size: 11px; color: var(--text-muted); margin-bottom: 5px; line-height: 1.4; font-style: italic; }
 
@@ -87,6 +88,7 @@
   .object-group { border: 1px solid var(--border); border-radius: 4px; padding: 14px; margin-bottom: 14px; background: rgba(255,255,255,0.015); }
   .object-group > .group-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin: -14px -14px 14px; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--panel); border-radius: 4px 4px 0 0; display: flex; justify-content: space-between; align-items: center; }
   .object-group > .group-title .req { color: var(--err); font-size: 10px; }
+  .object-group > .group-title .opt { color: var(--text-muted); font-size: 10px; font-style: italic; }
 
   .array-items { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
   .array-item { display: flex; gap: 6px; align-items: flex-start; }
@@ -149,20 +151,20 @@
 </style>
 </head>
 <body>
-<div id="loading" class="loading-overlay">Cargando base documental</div>
+<div id="loading" class="loading-overlay">Loading knowledge base</div>
 
 <header>
   <div class="brand">
     <span class="dot"></span>
     <span>TRIAGE · KB</span>
-    <span class="sub">v2.0 / github-sync</span>
+    <span class="sub">v2.1 / github-sync</span>
     <span class="repo-info" id="repo-info"></span>
   </div>
   <div class="top-actions">
     <span class="sync-status ok" id="sync-status"><span class="dot"></span><span id="sync-text">idle</span></span>
-    <button class="ghost" id="btn-settings">⚙ Config</button>
-    <button class="ghost" id="btn-import">↓ Importar JSON</button>
-    <button class="primary" id="btn-new">+ Nuevo caso</button>
+    <button class="ghost" id="btn-settings">⚙ Settings</button>
+    <button class="ghost" id="btn-import">↓ Import JSON</button>
+    <button class="primary" id="btn-new">+ New case</button>
   </div>
 </header>
 
@@ -170,25 +172,25 @@
   <aside>
     <div class="sidebar-head">
       <div class="sidebar-title">
-        <span>Casos</span>
+        <span>Cases</span>
         <span>
-          <button class="sync-btn" id="btn-sync" title="Recargar desde el repo">↻</button>
+          <button class="sync-btn" id="btn-sync" title="Reload from repo">↻</button>
           <span class="count" id="case-count">0</span>
         </span>
       </div>
-      <input type="text" id="search" class="search" placeholder="buscar…" />
+      <input type="text" id="search" class="search" placeholder="search…" />
     </div>
     <div class="case-list" id="case-list"></div>
     <div class="sidebar-foot">
-      <button class="ghost" id="btn-export-all">↓ Exportar todos</button>
+      <button class="ghost" id="btn-export-all">↓ Export all</button>
     </div>
   </aside>
 
   <section class="editor-wrap" id="editor-wrap">
     <div id="no-selection" class="no-selection">
       <h2>// no case selected</h2>
-      <div class="hint">Selecciona un caso de la lista, crea uno nuevo, o importa un JSON existente. Los cambios se guardan como commits en el repo de GitHub.</div>
-      <button class="primary" id="btn-new-2">+ Nuevo caso</button>
+      <div class="hint">Select a case from the list, create a new one, or import an existing JSON. Changes are stored as commits in the GitHub repo.</div>
+      <button class="primary" id="btn-new-2">+ New case</button>
     </div>
     <div id="editor" class="hidden"></div>
   </section>
@@ -198,37 +200,37 @@
 
 <div id="config-modal" class="modal-backdrop hidden">
   <div class="modal">
-    <h3>// Configuración GitHub</h3>
+    <h3>// GitHub Settings</h3>
     <div class="hint">
-      Los casos se guardarán como <code>cases/CASE-YYYY-NNN.json</code> en el repo indicado.<br><br>
-      Necesitas un <strong>Personal Access Token</strong> con permiso <code>repo</code> (clásico) o <code>Contents: Read/Write</code> (fine-grained).<br>
+      Cases are stored as <code>cases/CASE-YYYY-NNN.json</code> in the configured repo.<br><br>
+      You need a <strong>Personal Access Token</strong> with <code>repo</code> scope (classic) or <code>Contents: Read/Write</code> (fine-grained).<br>
       → <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a><br><br>
-      El token se guarda <strong>solo en tu navegador</strong> (localStorage) y va directamente a la API de GitHub.
+      The token is stored <strong>only in your browser</strong> (localStorage) and sent directly to the GitHub API.
     </div>
-    <div class="row"><label>owner</label><input type="text" id="cfg-owner" placeholder="mi-org-o-usuario"/></div>
+    <div class="row"><label>owner</label><input type="text" id="cfg-owner" placeholder="my-org-or-user"/></div>
     <div class="row"><label>repo</label><input type="text" id="cfg-repo" placeholder="triage-kb"/></div>
     <div class="row"><label>branch</label><input type="text" id="cfg-branch" placeholder="main" value="main"/></div>
     <div class="row"><label>cases path</label><input type="text" id="cfg-path" placeholder="cases" value="cases"/></div>
-    <div class="row"><label>token</label><input type="password" id="cfg-token" placeholder="ghp_... o github_pat_..."/></div>
-    <div class="row"><label>author name</label><input type="text" id="cfg-author" placeholder="Tu nombre para los commits"/></div>
+    <div class="row"><label>token</label><input type="password" id="cfg-token" placeholder="ghp_... or github_pat_..."/></div>
+    <div class="row"><label>author name</label><input type="text" id="cfg-author" placeholder="Your name for commits"/></div>
     <div class="modal-actions">
-      <button class="danger" id="btn-config-clear">Borrar config</button>
-      <button class="ghost" id="btn-config-cancel">Cancelar</button>
-      <button class="primary" id="btn-config-save">Probar y guardar</button>
+      <button class="danger" id="btn-config-clear">Clear config</button>
+      <button class="ghost" id="btn-config-cancel">Cancel</button>
+      <button class="primary" id="btn-config-save">Test and save</button>
     </div>
   </div>
 </div>
 
 <div id="import-modal" class="modal-backdrop hidden">
   <div class="modal">
-    <h3>// Importar caso desde JSON</h3>
-    <div class="hint">Pega un objeto JSON (o un array) que cumpla el schema. Si el case_id ya existe, se sobreescribirá.</div>
+    <h3>// Import case from JSON</h3>
+    <div class="hint">Paste a JSON object (or an array) matching the schema. If the case_id already exists, it will be overwritten.</div>
     <textarea id="import-textarea" placeholder='{ "case_id": "CASE-2026-001", ... }'></textarea>
     <div class="modal-actions">
-      <button class="ghost" id="btn-import-cancel">Cancelar</button>
-      <button class="ghost" id="btn-import-file">📁 Desde archivo…</button>
+      <button class="ghost" id="btn-import-cancel">Cancel</button>
+      <button class="ghost" id="btn-import-file">📁 From file…</button>
       <input type="file" id="file-input" accept="application/json,.json" multiple style="display:none">
-      <button class="primary" id="btn-import-confirm">Importar al repo</button>
+      <button class="primary" id="btn-import-confirm">Import to repo</button>
     </div>
   </div>
 </div>
@@ -421,39 +423,66 @@ function defaultForSchema(schema) {
 }
 function deepClone(x) { return JSON.parse(JSON.stringify(x)); }
 
+// Returns true when a value is "empty for validation purposes"
+function isEmptyValue(v) {
+  if (v === null || v === undefined || v === '') return true;
+  if (Array.isArray(v) && v.length === 0) return true;
+  if (typeof v === 'object' && !Array.isArray(v) && Object.keys(v).every(k => isEmptyValue(v[k]))) return true;
+  return false;
+}
+
+// An "empty array item" is one whose object properties are all empty — treat as "not yet filled, skip validation"
+function isEmptyItem(item, itemsSchema) {
+  if (itemsSchema && typeOf(itemsSchema) === 'object') {
+    if (item === null || item === undefined) return true;
+    if (typeof item !== 'object') return false;
+    const props = itemsSchema.properties || {};
+    return Object.keys(props).every(k => isEmptyValue(item[k]));
+  }
+  return isEmptyValue(item);
+}
+
 function validate(data, schema, path = '$') {
   const errors = [];
   if (data === null || data === undefined) { if (isNullable(schema)) return errors; }
   const t = typeOf(schema);
   if (schema.enum && !schema.enum.includes(data)) {
-    if (!(data === '' && isNullable(schema))) errors.push(`${path}: debe ser uno de [${schema.enum.join(', ')}]`);
+    if (!(data === '' && isNullable(schema)) && data !== '' && data !== null && data !== undefined) {
+      errors.push(`${path}: must be one of [${schema.enum.join(', ')}]`);
+    }
   }
   if (t === 'string') {
-    if (data !== null && typeof data !== 'string' && !(data === undefined)) errors.push(`${path}: debe ser string`);
-    if (typeof data === 'string' && schema.pattern) {
+    if (data !== null && typeof data !== 'string' && !(data === undefined)) errors.push(`${path}: must be a string`);
+    if (typeof data === 'string' && schema.pattern && data !== '') {
       const re = new RegExp(schema.pattern);
-      if (!re.test(data)) errors.push(`${path}: no cumple el patrón ${schema.pattern}`);
+      if (!re.test(data)) errors.push(`${path}: does not match pattern ${schema.pattern}`);
     }
   } else if (t === 'integer' || t === 'number') {
     if (data !== null && data !== undefined && data !== '') {
-      if (typeof data !== 'number' || Number.isNaN(data)) errors.push(`${path}: debe ser un número`);
-      else if (t === 'integer' && !Number.isInteger(data)) errors.push(`${path}: debe ser entero`);
-      else if (schema.minimum !== undefined && data < schema.minimum) errors.push(`${path}: debe ser >= ${schema.minimum}`);
+      if (typeof data !== 'number' || Number.isNaN(data)) errors.push(`${path}: must be a number`);
+      else if (t === 'integer' && !Number.isInteger(data)) errors.push(`${path}: must be an integer`);
+      else if (schema.minimum !== undefined && data < schema.minimum) errors.push(`${path}: must be >= ${schema.minimum}`);
     }
   } else if (t === 'boolean') {
-    if (typeof data !== 'boolean' && !(data === null && isNullable(schema))) errors.push(`${path}: debe ser booleano`);
+    if (typeof data !== 'boolean' && !(data === null && isNullable(schema))) errors.push(`${path}: must be a boolean`);
   } else if (t === 'array') {
-    if (!Array.isArray(data)) { if (!(data === null && isNullable(schema))) errors.push(`${path}: debe ser array`); }
+    if (!Array.isArray(data)) { if (!(data === null && isNullable(schema))) errors.push(`${path}: must be an array`); }
     else {
-      if (schema.minItems !== undefined && data.length < schema.minItems) errors.push(`${path}: requiere al menos ${schema.minItems} elemento(s)`);
-      if (schema.items) data.forEach((item, i) => errors.push(...validate(item, schema.items, `${path}[${i}]`)));
+      if (schema.minItems !== undefined && data.length < schema.minItems) errors.push(`${path}: requires at least ${schema.minItems} item(s)`);
+      if (schema.items) {
+        data.forEach((item, i) => {
+          // Skip validation for items that are completely empty — treat as "not yet filled"
+          if (isEmptyItem(item, schema.items)) return;
+          errors.push(...validate(item, schema.items, `${path}[${i}]`));
+        });
+      }
     }
   } else if (t === 'object') {
-    if (typeof data !== 'object' || data === null || Array.isArray(data)) errors.push(`${path}: debe ser objeto`);
+    if (typeof data !== 'object' || data === null || Array.isArray(data)) errors.push(`${path}: must be an object`);
     else {
       for (const req of (schema.required || [])) {
         const v = data[req];
-        if (v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0)) errors.push(`${path}.${req}: requerido`);
+        if (v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0)) errors.push(`${path}.${req}: required`);
       }
       for (const [k, v] of Object.entries(data)) if (schema.properties && schema.properties[k]) errors.push(...validate(v, schema.properties[k], `${path}.${k}`));
     }
@@ -494,7 +523,11 @@ function renderField(key, schema, pathArr, required) {
   const desc = schema.description;
   if (schema.enum) {
     const wrap = createEl('div', { class: 'field' });
-    wrap.appendChild(createEl('label', {}, [ key, required ? createEl('span', { class: 'req' }, '*') : null, createEl('span', { class: 'type' }, 'enum') ]));
+    wrap.appendChild(createEl('label', {}, [
+      key,
+      required ? createEl('span', { class: 'req' }, '*') : createEl('span', { class: 'opt' }, 'optional'),
+      createEl('span', { class: 'type' }, 'enum')
+    ]));
     if (desc) wrap.appendChild(createEl('div', { class: 'desc' }, desc));
     const select = createEl('select', {});
     const current = getAtPath(state.draft, pathArr);
@@ -517,6 +550,7 @@ function renderField(key, schema, pathArr, required) {
     labelEl.appendChild(cb);
     labelEl.appendChild(document.createTextNode(key));
     if (required) labelEl.appendChild(createEl('span', { class: 'req' }, '*'));
+    else labelEl.appendChild(createEl('span', { class: 'opt' }, 'optional'));
     labelEl.appendChild(createEl('span', { class: 'type' }, isNullable(schema) ? 'bool?' : 'bool'));
     wrap.appendChild(labelEl);
     if (desc) wrap.appendChild(createEl('div', { class: 'desc' }, desc));
@@ -526,7 +560,8 @@ function renderField(key, schema, pathArr, required) {
   if (type === 'object') return renderObject(key, schema, pathArr, required);
   const wrap = createEl('div', { class: 'field' });
   wrap.appendChild(createEl('label', {}, [
-    key, required ? createEl('span', { class: 'req' }, '*') : null,
+    key,
+    required ? createEl('span', { class: 'req' }, '*') : createEl('span', { class: 'opt' }, 'optional'),
     createEl('span', { class: 'type' }, type + (isNullable(schema) ? '?' : '') + (schema.pattern ? ' · ' + schema.pattern : ''))
   ]));
   if (desc) wrap.appendChild(createEl('div', { class: 'desc' }, desc));
@@ -558,7 +593,10 @@ function renderField(key, schema, pathArr, required) {
 
 function renderObject(key, schema, pathArr, required) {
   const wrap = createEl('div', { class: 'object-group' });
-  wrap.appendChild(createEl('div', { class: 'group-title' }, [ key || 'object', required ? createEl('span', { class: 'req' }, 'required') : null ]));
+  wrap.appendChild(createEl('div', { class: 'group-title' }, [
+    key || 'object',
+    required ? createEl('span', { class: 'req' }, 'required') : createEl('span', { class: 'opt' }, 'optional')
+  ]));
   if (schema.description) wrap.appendChild(createEl('div', { class: 'desc', style: 'margin-bottom:10px;' }, schema.description));
   if (getAtPath(state.draft, pathArr) == null) setAtPath(state.draft, pathArr, {});
   const reqs = schema.required || [];
@@ -570,41 +608,64 @@ function renderArray(key, schema, pathArr, required) {
   const itemsSchema = schema.items || { type: 'string' };
   const itemType = typeOf(itemsSchema);
   const wrap = createEl('div', { class: 'field' });
+  const isRequired = required || schema.minItems;
   wrap.appendChild(createEl('label', {}, [
     key,
-    required || schema.minItems ? createEl('span', { class: 'req' }, '*') : null,
+    isRequired ? createEl('span', { class: 'req' }, '*') : createEl('span', { class: 'opt' }, 'optional'),
     createEl('span', { class: 'type' }, `array<${itemsSchema.enum ? 'enum' : itemType}>` + (schema.minItems ? ` · min ${schema.minItems}` : ''))
   ]));
   if (schema.description) wrap.appendChild(createEl('div', { class: 'desc' }, schema.description));
   if (!Array.isArray(getAtPath(state.draft, pathArr))) setAtPath(state.draft, pathArr, []);
 
+  // Simple string array → tag/chip-style UI
   const isSimpleStrArr = itemType === 'string' && !itemsSchema.enum && (key === 'tags' || key === 'similarity_keys');
   if (isSimpleStrArr) {
     const tagWrap = createEl('div', { class: 'tag-input-wrap' });
+    // keep a single input element alive across re-renders to avoid blur-add duplication
+    const inp = createEl('input', { type: 'text', placeholder: 'add + Enter…' });
+    let justAdded = false;
+
+    const commitValue = (raw) => {
+      const val = (raw || '').trim();
+      if (!val) return false;
+      const a = getAtPath(state.draft, pathArr);
+      a.push(val);
+      markDirty();
+      inp.value = '';
+      renderTags();
+      return true;
+    };
+
     const renderTags = () => {
-      tagWrap.innerHTML = '';
+      // Remove only tag nodes, keep the input
+      Array.from(tagWrap.querySelectorAll('.tag')).forEach(n => n.remove());
       const arr = getAtPath(state.draft, pathArr) || [];
       arr.forEach((t, i) => {
         const tag = createEl('span', { class: 'tag' }, [
           t,
-          createEl('button', { type: 'button', onclick: () => { getAtPath(state.draft, pathArr).splice(i, 1); markDirty(); renderTags(); } }, '×')
+          createEl('button', { type: 'button', onclick: () => {
+            const a = getAtPath(state.draft, pathArr); a.splice(i, 1); markDirty(); renderTags();
+          }}, '×')
         ]);
-        tagWrap.appendChild(tag);
+        tagWrap.insertBefore(tag, inp);
       });
-      const inp = createEl('input', { type: 'text', placeholder: 'añadir + Enter…' });
-      inp.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ',') {
-          e.preventDefault();
-          const val = inp.value.trim();
-          if (val) { getAtPath(state.draft, pathArr).push(val); markDirty(); renderTags(); }
-        }
-      });
-      inp.addEventListener('blur', () => {
-        const val = inp.value.trim();
-        if (val) { getAtPath(state.draft, pathArr).push(val); markDirty(); renderTags(); }
-      });
-      tagWrap.appendChild(inp);
     };
+
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        if (commitValue(inp.value)) {
+          justAdded = true;
+          setTimeout(() => { justAdded = false; }, 50);
+        }
+      }
+    });
+    inp.addEventListener('blur', () => {
+      if (justAdded) return;   // avoid double-commit when Enter causes focus change
+      commitValue(inp.value);
+    });
+
+    tagWrap.appendChild(inp);
     renderTags();
     wrap.appendChild(tagWrap);
     return wrap;
@@ -620,7 +681,7 @@ function renderArray(key, schema, pathArr, required) {
         const box = createEl('div', { class: 'array-item-complex' });
         box.appendChild(createEl('div', { class: 'item-header' }, [
           `// ${key}[${i}]`,
-          createEl('button', { class: 'danger', type: 'button', onclick: () => { getAtPath(state.draft, pathArr).splice(i, 1); markDirty(); renderItems(); }}, '× eliminar')
+          createEl('button', { class: 'danger', type: 'button', onclick: () => { getAtPath(state.draft, pathArr).splice(i, 1); markDirty(); renderItems(); refreshValidationPanel(); }}, '× remove')
         ]));
         const reqs = itemsSchema.required || [];
         for (const [k, v] of Object.entries(itemsSchema.properties || {})) box.appendChild(renderField(k, v, [...itemPath, k], reqs.includes(k)));
@@ -632,7 +693,7 @@ function renderArray(key, schema, pathArr, required) {
         const l = inner.querySelector('label'); if (l) l.style.display = 'none';
         const d = inner.querySelector('.desc'); if (d) d.style.display = 'none';
         row.appendChild(inner);
-        row.appendChild(createEl('button', { class: 'danger', type: 'button', onclick: () => { getAtPath(state.draft, pathArr).splice(i, 1); markDirty(); renderItems(); }}, '×'));
+        row.appendChild(createEl('button', { class: 'danger', type: 'button', onclick: () => { getAtPath(state.draft, pathArr).splice(i, 1); markDirty(); renderItems(); refreshValidationPanel(); }}, '×'));
         itemsWrap.appendChild(row);
       }
     });
@@ -641,8 +702,8 @@ function renderArray(key, schema, pathArr, required) {
   wrap.appendChild(itemsWrap);
   wrap.appendChild(createEl('button', { class: 'add-btn', type: 'button', onclick: () => {
     getAtPath(state.draft, pathArr).push(defaultForSchema(itemsSchema));
-    markDirty(); renderItems();
-  }}, `+ añadir ${itemType === 'object' ? 'item' : 'valor'}`));
+    markDirty(); renderItems(); refreshValidationPanel();
+  }}, `+ add ${itemType === 'object' ? 'item' : 'value'}`));
   return wrap;
 }
 
@@ -657,7 +718,7 @@ function renderSidebar() {
   document.getElementById('case-count').textContent = Object.keys(state.cases).length;
   if (items.length === 0) {
     list.innerHTML = '';
-    list.appendChild(createEl('div', { class: 'empty' }, state.searchQuery ? 'sin resultados' : (state.config ? 'aún no hay casos en el repo' : 'configura GitHub para empezar')));
+    list.appendChild(createEl('div', { class: 'empty' }, state.searchQuery ? 'no results' : (state.config ? 'no cases in the repo yet' : 'configure GitHub to get started')));
     return;
   }
   list.innerHTML = '';
@@ -666,8 +727,8 @@ function renderSidebar() {
       class: 'case-item' + (state.currentId === c.case_id ? ' active' : ''),
       onclick: () => selectCase(c.case_id)
     }, [
-      createEl('div', { class: 'case-id' }, c.case_id || '(sin id)'),
-      createEl('div', { class: 'case-name' }, c.name || '(sin nombre)'),
+      createEl('div', { class: 'case-id' }, c.case_id || '(no id)'),
+      createEl('div', { class: 'case-name' }, c.name || '(no name)'),
       createEl('div', { class: 'case-meta' }, [
         (c.metadata && c.metadata.validated) ? createEl('span', { class: 'validated' }, '✓ validated') : createEl('span', { class: 'unvalidated' }, '○ pending'),
         createEl('span', {}, (c.decision && c.decision.action) ? c.decision.action.replace(/_/g, ' ').toLowerCase() : '—')
@@ -694,12 +755,12 @@ function renderEditor() {
   const head = createEl('div', { class: 'editor-head' }, [
     createEl('div', { class: 'editor-title' }, [
       createEl('span', { class: 'mode' }, isNew ? '// NEW' : '// EDIT'),
-      createEl('span', { class: 'case-id-display' }, state.draft.case_id || '(sin id)')
+      createEl('span', { class: 'case-id-display' }, state.draft.case_id || '(no id)')
     ]),
     createEl('div', { class: 'editor-actions' }, [
       createEl('button', { class: 'ghost', onclick: () => exportCase(state.draft) }, '↓ JSON'),
-      !isNew ? createEl('button', { class: 'danger', onclick: onDelete }, '× Eliminar') : null,
-      createEl('button', { class: 'primary', onclick: onSave }, '✓ Commit al repo')
+      !isNew ? createEl('button', { class: 'danger', onclick: onDelete }, '× Delete') : null,
+      createEl('button', { class: 'primary', onclick: onSave }, '✓ Commit to repo')
     ])
   ]);
   editor.appendChild(head);
@@ -717,13 +778,13 @@ function refreshValidationPanel() {
   if (!panel) return;
   const errors = validate(state.draft, SCHEMA);
   panel.innerHTML = '';
-  if (errors.length === 0) { panel.className = 'validation-panel ok'; panel.textContent = '✓ válido según el schema'; }
+  if (errors.length === 0) { panel.className = 'validation-panel ok'; panel.textContent = '✓ valid against schema'; }
   else {
     panel.className = 'validation-panel err';
-    panel.appendChild(createEl('div', {}, `✗ ${errors.length} problema(s) de validación:`));
+    panel.appendChild(createEl('div', {}, `✗ ${errors.length} validation issue(s):`));
     const ul = createEl('ul', {});
     errors.slice(0, 12).forEach(e => ul.appendChild(createEl('li', {}, e)));
-    if (errors.length > 12) ul.appendChild(createEl('li', {}, `… y ${errors.length - 12} más`));
+    if (errors.length > 12) ul.appendChild(createEl('li', {}, `… and ${errors.length - 12} more`));
     panel.appendChild(ul);
   }
 }
@@ -731,7 +792,7 @@ function refreshValidationPanel() {
 function updateRepoInfo() {
   const el = document.getElementById('repo-info');
   if (state.config) el.innerHTML = `<strong>${state.config.owner}/${state.config.repo}</strong> · ${state.config.branch}`;
-  else el.innerHTML = '<span style="color: var(--warn)">sin configurar</span>';
+  else el.innerHTML = '<span style="color: var(--warn)">not configured</span>';
 }
 function setSyncStatus(status, text) {
   const el = document.getElementById('sync-status');
@@ -741,7 +802,7 @@ function setSyncStatus(status, text) {
 }
 
 function selectCase(id) {
-  if (state.dirty) { if (!confirm('Tienes cambios sin guardar. ¿Descartar?')) return; }
+  if (state.dirty) { if (!confirm('You have unsaved changes. Discard?')) return; }
   const entry = state.cases[id];
   if (!entry) return;
   state.currentId = id;
@@ -752,7 +813,7 @@ function selectCase(id) {
 }
 
 function newCase() {
-  if (state.dirty) { if (!confirm('Tienes cambios sin guardar. ¿Descartar?')) return; }
+  if (state.dirty) { if (!confirm('You have unsaved changes. Discard?')) return; }
   state.currentId = null;
   state.draft = defaultForSchema(SCHEMA);
   state.draft.case_id = suggestNextId();
@@ -774,15 +835,36 @@ function suggestNextId() {
   return `CASE-${year}-${String(maxN + 1).padStart(3, '0')}`;
 }
 
+// Strip empty-for-validation items from arrays before saving.
+// This keeps the persisted JSON clean — no dangling empty objects.
+function cleanForSave(data, schema) {
+  if (data === null || data === undefined) return data;
+  const t = typeOf(schema);
+  if (t === 'array' && Array.isArray(data) && schema.items) {
+    const cleaned = data.filter(item => !isEmptyItem(item, schema.items)).map(item => cleanForSave(item, schema.items));
+    return cleaned;
+  }
+  if (t === 'object' && typeof data === 'object' && !Array.isArray(data)) {
+    const out = {};
+    for (const [k, v] of Object.entries(data)) {
+      const subSchema = (schema.properties && schema.properties[k]) || { type: typeof v };
+      out[k] = cleanForSave(v, subSchema);
+    }
+    return out;
+  }
+  return data;
+}
+
 async function onSave() {
-  if (!state.config) { toast('Configura GitHub primero', 'err'); openConfig(); return; }
-  const errors = validate(state.draft, SCHEMA);
-  if (errors.length > 0) { if (!confirm(`Hay ${errors.length} errores de validación. ¿Guardar igualmente?`)) return; }
-  const newId = state.draft.case_id;
-  if (!newId) { toast('case_id vacío', 'err'); return; }
+  if (!state.config) { toast('Configure GitHub first', 'err'); openConfig(); return; }
+  const toSave = cleanForSave(state.draft, SCHEMA);
+  const errors = validate(toSave, SCHEMA);
+  if (errors.length > 0) { if (!confirm(`There are ${errors.length} validation error(s). Save anyway?`)) return; }
+  const newId = toSave.case_id;
+  if (!newId) { toast('case_id is empty', 'err'); return; }
   setSyncStatus('sync', 'committing…');
   const oldId = state.currentId;
-  const content = JSON.stringify(state.draft, null, 2) + '\n';
+  const content = JSON.stringify(toSave, null, 2) + '\n';
   const newPath = `${state.config.path}/${newId}.json`;
   try {
     if (oldId && oldId !== newId) {
@@ -796,15 +878,16 @@ async function onSave() {
     const sha = existing ? existing.sha : undefined;
     const msg = existing ? `update(kb): ${newId}` : `add(kb): ${newId}`;
     const res = await ghPutFile(newPath, content, msg, sha);
-    state.cases[newId] = { data: deepClone(state.draft), sha: res.content.sha, path: newPath };
+    state.cases[newId] = { data: deepClone(toSave), sha: res.content.sha, path: newPath };
     state.currentId = newId;
+    state.draft = deepClone(toSave);
     state.dirty = false;
     renderSidebar(); renderEditor();
     setSyncStatus('ok', 'synced');
-    toast('Commit realizado');
+    toast('Committed');
   } catch (e) {
     setSyncStatus('err', 'error');
-    toast('Error al commitear: ' + e.message, 'err');
+    toast('Commit failed: ' + e.message, 'err');
   }
 }
 
@@ -812,7 +895,7 @@ async function onDelete() {
   if (!state.currentId || !state.config) return;
   const entry = state.cases[state.currentId];
   if (!entry) return;
-  if (!confirm(`¿Eliminar el caso ${state.currentId} del repo? Se creará un commit de borrado.`)) return;
+  if (!confirm(`Delete case ${state.currentId} from the repo? A delete commit will be created.`)) return;
   setSyncStatus('sync', 'deleting…');
   try {
     await ghDeleteFile(entry.path, entry.sha, `remove(kb): ${state.currentId}`);
@@ -820,10 +903,10 @@ async function onDelete() {
     state.currentId = null; state.draft = null; state.dirty = false;
     renderSidebar(); renderEditor();
     setSyncStatus('ok', 'synced');
-    toast('Eliminado del repo', 'warn');
+    toast('Deleted from repo', 'warn');
   } catch (e) {
     setSyncStatus('err', 'error');
-    toast('Error al eliminar: ' + e.message, 'err');
+    toast('Delete failed: ' + e.message, 'err');
   }
 }
 
@@ -838,9 +921,9 @@ function exportCase(data) {
 
 function exportAll() {
   const list = Object.values(state.cases).map(c => c.data);
-  if (list.length === 0) { toast('no hay casos', 'warn'); return; }
+  if (list.length === 0) { toast('no cases', 'warn'); return; }
   list.forEach((c, i) => setTimeout(() => exportCase(c), i * 200));
-  toast(`exportando ${list.length} archivo(s)…`);
+  toast(`exporting ${list.length} file(s)…`);
 }
 
 async function syncFromRepo() {
@@ -858,17 +941,17 @@ async function syncFromRepo() {
       } catch (e) { console.warn('skip file', f.path, e); }
     }
     state.cases = newCases;
-    setSyncStatus('ok', `${files.length} casos`);
+    setSyncStatus('ok', `${files.length} cases`);
     renderSidebar();
     if (state.currentId && !newCases[state.currentId]) { state.currentId = null; state.draft = null; state.dirty = false; renderEditor(); }
   } catch (e) {
     setSyncStatus('err', 'error');
-    toast('Error al cargar del repo: ' + e.message, 'err');
+    toast('Failed to load from repo: ' + e.message, 'err');
   }
 }
 
 function openImportModal() {
-  if (!state.config) { toast('Configura GitHub primero', 'err'); openConfig(); return; }
+  if (!state.config) { toast('Configure GitHub first', 'err'); openConfig(); return; }
   document.getElementById('import-modal').classList.remove('hidden');
   document.getElementById('import-textarea').value = '';
   document.getElementById('import-textarea').focus();
@@ -897,12 +980,12 @@ async function importFromText(text) {
       setSyncStatus('sync', `importing ${i+1}/${arr.length}…`);
     }
     setSyncStatus('ok', 'synced');
-    toast(`importados ${ok}${fail ? ` · ${fail} fallidos` : ''}`);
+    toast(`imported ${ok}${fail ? ` · ${fail} failed` : ''}`);
     renderSidebar();
     if (ok === 1 && arr.length === 1) selectCase(arr[0].case_id);
   } catch (e) {
     setSyncStatus('err', 'error');
-    toast('JSON inválido: ' + e.message, 'err');
+    toast('Invalid JSON: ' + e.message, 'err');
   }
 }
 
@@ -929,7 +1012,7 @@ async function saveConfigAndTest() {
     token: document.getElementById('cfg-token').value.trim(),
     author: document.getElementById('cfg-author').value.trim()
   };
-  if (!cfg.owner || !cfg.repo || !cfg.token) { toast('owner, repo y token son obligatorios', 'err'); return; }
+  if (!cfg.owner || !cfg.repo || !cfg.token) { toast('owner, repo and token are required', 'err'); return; }
   setSyncStatus('sync', 'testing…');
   try {
     const repo = await ghTestConnection(cfg);
@@ -938,12 +1021,12 @@ async function saveConfigAndTest() {
     saveConfig(cfg);
     updateRepoInfo();
     setSyncStatus('ok', 'connected');
-    toast(`Conectado a ${cfg.owner}/${cfg.repo}`);
+    toast(`Connected to ${cfg.owner}/${cfg.repo}`);
     closeConfig();
     await syncFromRepo();
   } catch (e) {
     setSyncStatus('err', 'error');
-    toast('Fallo al conectar: ' + e.message, 'err');
+    toast('Connection failed: ' + e.message, 'err');
   }
 }
 
@@ -970,7 +1053,7 @@ async function init() {
   document.getElementById('btn-config-cancel').addEventListener('click', closeConfig);
   document.getElementById('btn-config-save').addEventListener('click', saveConfigAndTest);
   document.getElementById('btn-config-clear').addEventListener('click', () => {
-    if (!confirm('¿Borrar la configuración local? (no afecta al repo)')) return;
+    if (!confirm('Clear local config? (repo is not affected)')) return;
     clearConfig(); state.config = null; state.cases = {}; state.currentId = null; state.draft = null;
     updateRepoInfo(); setSyncStatus('err', 'unconfigured'); renderSidebar(); renderEditor();
     closeConfig();
