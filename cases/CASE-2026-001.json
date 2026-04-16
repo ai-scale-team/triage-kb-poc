@@ -1,0 +1,60 @@
+{
+  "case_id": "CASE-2026-001",
+  "name": "CASE xxxxx",
+  "tags": [
+    "AAA",
+    "BBBB",
+    "SSSS"
+  ],
+  "context": {
+    "session_messages": [
+      "ASDSADASDASDASDASDASDSADASDASDASDASDASD"
+    ],
+    "job_status": "Failed",
+    "job_type": "DASDASD",
+    "consecutive_failures": 0
+  },
+  "decision": {
+    "action": "CREATE_NEW_TICKET",
+    "reasoning": "JKLÑKJ",
+    "tickets": [],
+    "requires_client_action_note": "JKLÑJLKÑLKJÑJKLÑJLÑ"
+  },
+  "similarity_keys": [
+    "ÑLÑLKÑLKÑÑKLÑLK"
+  ],
+  "metadata": {
+    "created_by": "mcast team",
+    "case_created_at": "2026-04-16",
+    "job_executed_at": "2026-04-16",
+    "validated": false,
+    "company_name": "---",
+    "source_job_id": "---",
+    "job_name": "--",
+    "server_name": "--"
+  },
+  "existing_tickets": [
+    {
+      "ticket_id": "111111111111111111111",
+      "status": "open",
+      "reason": "ASDASD",
+      "cw_ticket_id": 11111111111111,
+      "summary": "ASDASD"
+    },
+    {
+      "ticket_id": "",
+      "status": "",
+      "reason": ""
+    }
+  ],
+  "client_instructions": [
+    {
+      "level": "company",
+      "instruction": ".JKL.KK.LLKJ"
+    },
+    {
+      "level": "",
+      "instruction": ""
+    }
+  ]
+}
