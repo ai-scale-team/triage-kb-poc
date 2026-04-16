@@ -11,7 +11,7 @@
       "Error: Failed to connect to backup repository. Network path not found or access denied."
     ],
     "job_status": "Failed",
-    "job_type": "backup",
+    "job_type": "backup veem",
     "consecutive_failures": 1
   },
   "decision": {
